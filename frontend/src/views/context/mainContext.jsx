@@ -1,10 +1,12 @@
-import React, { createContext, useReducer, useState, useEffect, useLayoutEffect } from 'react'
+import React, { createContext, useReducer, useState, useEffect, useRef } from 'react'
 import { mainReducer } from './mainReducer'
 import axios from 'axios'
 import { BACKEND_URL } from '../../config'
 import { useHistory } from 'react-router';
-import { Image, Button, Tooltip } from 'antd'
+import { Image, Button, Tooltip, message } from 'antd'
 import { EditOutlined, SearchOutlined } from '@ant-design/icons'
+import ProForm, { ProFormText, ProFormSelect, ModalForm } from '@ant-design/pro-form';
+import Draw from '../Draw';
 
 const initialState = {
     newImage: false,
@@ -25,6 +27,7 @@ export const MainProvider = ({children}) => {
     const [mainData, mainDispatch] = useReducer(mainReducer, initialState)
     const [isLoading, setIsLoading] = useState(false)
     const history = useHistory();
+    const canvasRef = useRef()
 
     useEffect(() => {
         if(localStorage.getItem('email')){
@@ -141,9 +144,37 @@ export const MainProvider = ({children}) => {
                         setSelectedImageSet(item)
                     }} />
                 </Tooltip>,
-                <Tooltip title="edit">
-                    <Button shape="circle" icon={<EditOutlined />} />
-                </Tooltip>],
+                    <ModalForm
+                        width={900}
+                       title="Edit Mask Image"
+                       trigger={
+                            <Button shape="circle" icon={<EditOutlined />} />
+                       }
+                       drawerProps={{
+                           onCancel: () => console.log('run'),
+                           destroyOnClose: true,
+                       }}
+                       onFinish={async (values) => {
+                           console.log(canvasRef.current)
+                           const base64 = await canvasRef.current?.toDataURL('image/png')
+                           const blob = dataURLtoBlob(base64)
+                           const postData = { file: blob}
+                           axios.post(
+                               `${BACKEND_URL}/images/update-mask/${item.id}`, 
+                               postData,
+                               {
+                                   headers: { Authorization: `Bearer ${localStorage.getItem('token')}`}
+                               }
+                           ).then((response) => {
+                               message.success('Mask Image Edited')
+                           })
+                           .catch((error) => console.log(error))
+                           return true
+                       }}
+                   >
+                       <Draw {...{url: item.mask_image_url, canvasRef }} />
+                   </ModalForm>
+                    ],
                 // avatar: 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
                 content: (
                   <div
@@ -190,3 +221,19 @@ export const MainProvider = ({children}) => {
     }
 }
         
+
+
+function dataURLtoBlob(dataURL) {
+    let array, binary, i, len;
+    binary = atob(dataURL.split(',')[1]);
+    array = [];
+    i = 0;
+    len = binary.length;
+    while (i < len) {
+      array.push(binary.charCodeAt(i));
+      i++;
+    }
+    return new Blob([new Uint8Array(array)], {
+      type: 'image/png'
+    });
+  };
