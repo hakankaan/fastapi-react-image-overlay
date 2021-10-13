@@ -155,21 +155,34 @@ export const MainProvider = ({children}) => {
                            destroyOnClose: true,
                        }}
                        onFinish={async (values) => {
-                           console.log(canvasRef.current)
-                           const base64 = await canvasRef.current?.toDataURL('image/png')
-                           const blob = dataURLtoBlob(base64)
-                           const postData = { file: blob}
-                           axios.post(
-                               `${BACKEND_URL}/images/update-mask/${item.id}`, 
-                               postData,
+                           try {
+                            const base64 = await canvasRef.current?.toDataURL('image/jpg')
+                            console.log(base64)
+                            const blob = dataURLtoBlob(base64)
+                            const file = new File([blob], String(Math.floor(Math.random()*90000) + 10000), { type: blob.type });
+                            console.log(file)
+                            var formData = new FormData();
+                            formData.append("file", file);
+                            axios.post(
+                               `${BACKEND_URL}/images/update-mask/${item.image_set_id}`, 
+                               formData,
                                {
-                                   headers: { Authorization: `Bearer ${localStorage.getItem('token')}`}
+                                   headers: { 
+                                        'Content-Type': 'multipart/form-data',
+                                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                                    }
                                }
                            ).then((response) => {
                                message.success('Mask Image Edited')
+                               getImageSet()
                            })
                            .catch((error) => console.log(error))
                            return true
+                           } catch (error) {
+                               console.log(error)
+                           }
+                           
+                           
                        }}
                    >
                        <Draw {...{url: item.mask_image_url, canvasRef }} />
@@ -234,6 +247,8 @@ function dataURLtoBlob(dataURL) {
       i++;
     }
     return new Blob([new Uint8Array(array)], {
-      type: 'image/png'
+      type: 'image/jpg'
     });
   };
+
+ 

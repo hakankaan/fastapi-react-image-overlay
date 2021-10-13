@@ -42,13 +42,21 @@ const Draw = ({url, canvasRef}) => {
         loadImage()
     }, [])
     function loadImage(){
-        const img = new Image(canvasRef.current.width, canvasRef.current.height);
-        img.onload = function () {
-            const context = canvasRef.current.getContext('2d');
-            context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-            context.drawImage(img, 0, 0, this.width, this.height);
-        };
-        img.src = url;
+        try {
+            getBase64ImageFromUrl(url).then((base64) => {
+                let img = new Image(canvasRef.current.width, canvasRef.current.height);
+                img.crossOrigin = '*'
+                img.onload = function () {
+                    const context = canvasRef.current.getContext('2d');
+                    context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                    context.drawImage(img, 0, 0, this.width, this.height);
+                };
+                img.src = base64;
+            })
+            
+        } catch (error) {
+            console.log(error)
+        }
     }
 
     function drawing(e) { //if the pen is down in the canvas, draw/erase
@@ -91,7 +99,7 @@ const Draw = ({url, canvasRef}) => {
     return (
         <>
             <div style={styles.maindiv}>
-                <canvas ref={canvasRef} width="800px" height="600px" style={styles.canvas} 
+                <canvas id="imageCanvas" ref={canvasRef} width="800px" height="600px" style={styles.canvas} 
                     onMouseMove={(e)=>drawing(e)} 
                     onMouseDown={(e)=>penDown(e)} 
                     onMouseUp={(e)=>setPen('up')}>
@@ -118,3 +126,18 @@ const Draw = ({url, canvasRef}) => {
 }
 
 export default Draw
+
+async function getBase64ImageFromUrl(imageUrl) {
+    var res = await fetch("https://cors-anywhere.herokuapp.com/" + imageUrl, {mode: 'cors', headers: {"Access-Control-Allow-Origin": "*"}});
+    var blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      var reader  = new FileReader();
+      reader.addEventListener("load", function () {
+          resolve(reader.result);
+      }, false);
+      reader.onerror = () => {
+        return reject(this);
+      };
+      reader.readAsDataURL(blob);
+    })
+  }

@@ -8,7 +8,7 @@ from app.db.crud import (
     get_image,
     get_image_set,
 )
-from app.db.schemas import CreateMaskImage, CreateRawImage, ImageBase
+from app.db.schemas import CreateMaskImage, CreateRawImage, ImageBase, ImageSet
 from app.core.auth import get_current_active_user
 
 images_router = r = APIRouter()
@@ -56,8 +56,8 @@ async def image_create(
     """
     return create_mask_image(db, file)
 
-@r.post("/images/update-mask/{image_set_id}", response_model=ImageBase, response_model_exclude_none=True)
-async def image_create(
+@r.post("/images/update-mask/{image_set_id}", response_model=ImageSet, response_model_exclude_none=True)
+async def image_edit(
     request: Request,
     image_set_id: int,
     file: UploadFile = File(...),
@@ -72,7 +72,8 @@ async def image_create(
     if not image_set:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Image set not found")
 
-    setattr(image_set, 'mask_image_id', mask_image['id'])
+    print(mask_image.__dict__)
+    setattr(image_set, 'mask_image_id', mask_image.id)
 
     db.add(image_set)
     db.commit()

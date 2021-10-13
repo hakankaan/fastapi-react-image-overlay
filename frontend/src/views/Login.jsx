@@ -52,7 +52,7 @@ export const Login = () => {
   ) : (
 
     <LoginForm
-        title="Giriş Yap"
+        title="Login"
         subTitle="AI destekli patoloji takibi"
         onFinish={handleSubmit}
         submitter={{
